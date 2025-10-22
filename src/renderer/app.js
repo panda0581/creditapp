@@ -1,12 +1,16 @@
 const { ipcRenderer } = require('electron');
 
+// Inicializar visualizador
+const visualizer = new CreditVisualizer();
+
 // Estado de la aplicación
 const appState = {
   currentFile: null,
   extractedText: null,
   currentAnalysis: null,
   apiConfig: {},
-  availableModels: []
+  availableModels: [],
+  financialInfo: {}
 };
 
 // Inicialización
@@ -345,74 +349,12 @@ async function analyzeReport() {
 }
 
 function displayAnalysis(analysis) {
-  const container = document.getElementById('analysisResults');
-  container.innerHTML = '';
+  console.log('Mostrando análisis con visualizaciones:', analysis);
 
-  console.log('Mostrando análisis:', analysis);
+  // Usar el visualizador para crear una presentación completa con gráficos
+  visualizer.createCompleteVisualization(analysis, 'analysisResults');
 
-  // Mostrar nota si existe
-  if (analysis.note) {
-    const noteDiv = document.createElement('div');
-    noteDiv.className = 'analysis-note';
-    noteDiv.style.cssText = 'background: rgba(33, 150, 243, 0.1); border-left: 3px solid #2196F3; padding: 12px 16px; margin-bottom: 20px; border-radius: 8px;';
-    noteDiv.innerHTML = `<strong>ℹ️ Nota:</strong> ${analysis.note}`;
-    container.appendChild(noteDiv);
-  }
-
-  // Score principal
-  if (analysis.creditScore || analysis.credit_score) {
-    const score = analysis.creditScore || analysis.credit_score;
-    const scoreCard = createScoreCard(score);
-    container.appendChild(scoreCard);
-  }
-
-  // Resumen
-  if (analysis.summary) {
-    const summarySection = createSection('Resumen Ejecutivo', analysis.summary);
-    container.appendChild(summarySection);
-  }
-
-  // Probabilidades de aprobación
-  if (analysis.approvalProbabilities || analysis.approval_probabilities) {
-    const probs = analysis.approvalProbabilities || analysis.approval_probabilities;
-    const probSection = createApprovalSection(probs);
-    container.appendChild(probSection);
-  }
-
-  // Métricas clave
-  if (analysis.metrics || analysis.key_metrics) {
-    const metrics = analysis.metrics || analysis.key_metrics;
-    const metricsGrid = createMetricsGrid(metrics);
-    container.appendChild(metricsGrid);
-  }
-
-  // Recomendaciones
-  if (analysis.recommendations) {
-    const recSection = createRecommendationsSection(analysis.recommendations);
-    container.appendChild(recSection);
-  }
-
-  // Detalles completos
-  if (analysis.details) {
-    const detailsSection = createSection('Análisis Detallado', analysis.details);
-    container.appendChild(detailsSection);
-  }
-
-  // Si es respuesta raw (texto completo del análisis)
-  if (analysis.rawResponse) {
-    const rawSection = createSection('Análisis Completo', analysis.rawResponse);
-    container.appendChild(rawSection);
-  }
-
-  // Si no se mostró nada, mostrar el objeto completo
-  if (container.children.length === 0 || (container.children.length === 1 && analysis.note)) {
-    console.warn('No se pudo formatear el análisis, mostrando contenido raw');
-    const fallbackSection = createSection('Resultado del Análisis',
-      JSON.stringify(analysis, null, 2));
-    container.appendChild(fallbackSection);
-  }
-
-  console.log('✓ Análisis mostrado correctamente');
+  console.log('✓ Análisis mostrado correctamente con gráficos');
 }
 
 function createScoreCard(score) {
