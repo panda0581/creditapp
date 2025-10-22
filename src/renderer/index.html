@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Credit Report Analyzer - Análisis Profesional de Crédito</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <svg width="40" height="40" viewBox="0 0 40 40">
+          <circle cx="20" cy="20" r="18" fill="#4CAF50" opacity="0.2"/>
+          <path d="M20 5 L35 20 L20 35 L5 20 Z" fill="#4CAF50"/>
+          <text x="20" y="25" text-anchor="middle" fill="white" font-size="16" font-weight="bold">$</text>
+        </svg>
+        <h1>Credit Analyzer</h1>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-view="upload">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 0L20 10H15V20H5V10H0L10 0Z"/>
+          </svg>
+          Cargar Reporte
+        </button>
+        <button class="nav-item" data-view="analysis">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M0 0h8v8H0V0zm12 0h8v8h-8V0zM0 12h8v8H0v-8zm12 0h8v8h-8v-8z"/>
+          </svg>
+          Análisis
+        </button>
+        <button class="nav-item" data-view="history">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H9v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+          </svg>
+          Historial
+        </button>
+        <button class="nav-item" data-view="settings">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M17.43 10.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C12.46.2 12.25 0 12 0h-4c-.25 0-.46.2-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.22.24.42.49.42h4c.25 0 .46-.2.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM10 13c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"/>
+          </svg>
+          Configuración
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-indicator">
+          <div class="status-dot" id="apiStatus"></div>
+          <span id="apiStatusText">API no configurada</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Upload View -->
+      <div class="view active" id="upload-view">
+        <div class="view-header">
+          <h2>Cargar Reporte de Crédito</h2>
+          <p>Sube un PDF, imagen o captura de pantalla de tu reporte de crédito</p>
+        </div>
+
+        <div class="upload-section">
+          <div class="upload-area" id="uploadArea">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor">
+              <path d="M32 8L32 44M32 8L20 20M32 8L44 20" stroke-width="4" stroke-linecap="round"/>
+              <rect x="8" y="44" width="48" height="12" rx="2" stroke-width="4"/>
+            </svg>
+            <h3>Arrastra y suelta tu archivo aquí</h3>
+            <p>o haz clic para seleccionar</p>
+            <div class="supported-formats">
+              PDF, PNG, JPG, JPEG (máx. 50MB)
+            </div>
+          </div>
+
+          <div class="file-info" id="fileInfo" style="display: none;">
+            <div class="file-details">
+              <svg width="48" height="48" viewBox="0 0 48 48">
+                <rect width="48" height="48" rx="8" fill="#4CAF50" opacity="0.1"/>
+                <path d="M24 12v24m-12-12h24" stroke="#4CAF50" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+              <div>
+                <h4 id="fileName"></h4>
+                <p id="fileSize"></p>
+              </div>
+            </div>
+            <button class="btn-secondary" id="changeFile">Cambiar archivo</button>
+          </div>
+
+          <div class="processing-status" id="processingStatus" style="display: none;">
+            <div class="spinner"></div>
+            <p id="processingText">Procesando archivo...</p>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+
+          <div class="text-preview" id="textPreview" style="display: none;">
+            <h3>Texto Extraído</h3>
+            <div class="preview-content" id="previewContent"></div>
+            <button class="btn-secondary" id="editText">Editar texto</button>
+          </div>
+        </div>
+
+        <div class="analysis-options">
+          <h3>Opciones de Análisis</h3>
+
+          <div class="form-group">
+            <label for="modelSelect">Modelo de IA</label>
+            <select id="modelSelect" class="form-control">
+              <option value="">Cargando modelos...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="analysisType">Tipo de Análisis</label>
+            <select id="analysisType" class="form-control">
+              <option value="complete">Completo - Análisis exhaustivo</option>
+              <option value="quick">Rápido - Resumen ejecutivo</option>
+              <option value="approval">Probabilidad de Aprobación</option>
+              <option value="improvement">Plan de Mejora</option>
+            </select>
+          </div>
+
+          <button class="btn-primary btn-large" id="analyzeBtn" disabled>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0L20 10H15V20H5V10H0L10 0Z"/>
+            </svg>
+            Analizar Reporte
+          </button>
+        </div>
+      </div>
+
+      <!-- Analysis View -->
+      <div class="view" id="analysis-view">
+        <div class="view-header">
+          <h2>Resultados del Análisis</h2>
+          <div class="header-actions">
+            <button class="btn-secondary" id="exportBtn">Exportar</button>
+            <button class="btn-secondary" id="newAnalysisBtn">Nuevo Análisis</button>
+          </div>
+        </div>
+
+        <div class="analysis-results" id="analysisResults">
+          <!-- Los resultados se cargarán dinámicamente aquí -->
+          <div class="empty-state">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="#f0f0f0"/>
+              <path d="M40 60h40M60 40v40" stroke="#999" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            <h3>No hay análisis disponible</h3>
+            <p>Carga un reporte de crédito para comenzar</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- History View -->
+      <div class="view" id="history-view">
+        <div class="view-header">
+          <h2>Historial de Análisis</h2>
+          <button class="btn-secondary" id="clearHistoryBtn">Limpiar Historial</button>
+        </div>
+
+        <div class="history-list" id="historyList">
+          <!-- El historial se cargará dinámicamente aquí -->
+        </div>
+      </div>
+
+      <!-- Settings View -->
+      <div class="view" id="settings-view">
+        <div class="view-header">
+          <h2>Configuración</h2>
+          <p>Configura tu API key de OpenRouter y preferencias</p>
+        </div>
+
+        <div class="settings-section">
+          <h3>API de OpenRouter</h3>
+          <div class="form-group">
+            <label for="apiKeyInput">API Key</label>
+            <div class="input-group">
+              <input type="password" id="apiKeyInput" class="form-control" placeholder="sk-or-...">
+              <button class="btn-icon" id="toggleApiKey" title="Mostrar/Ocultar">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 5c-5.5 0-9 5-9 5s3.5 5 9 5 9-5 9-5-3.5-5-9-5zm0 8c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z"/>
+                </svg>
+              </button>
+            </div>
+            <small>Obtén tu API key en <a href="https://openrouter.ai" target="_blank">openrouter.ai</a></small>
+          </div>
+
+          <div class="form-group">
+            <label for="defaultModel">Modelo Predeterminado</label>
+            <select id="defaultModel" class="form-control">
+              <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+              <option value="openai/gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="google/gemini-pro">Gemini Pro</option>
+            </select>
+          </div>
+
+          <button class="btn-primary" id="saveSettingsBtn">Guardar Configuración</button>
+          <button class="btn-secondary" id="testApiBtn">Probar Conexión</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>Preferencias</h3>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="autoSaveAnalysis">
+              Guardar análisis automáticamente
+            </label>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="enableNotifications">
+              Habilitar notificaciones
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Acerca de</h3>
+          <p><strong>Credit Report Analyzer</strong> v1.0.0</p>
+          <p>Análisis profesional de reportes de crédito con IA</p>
+          <p class="text-muted">© 2024 - Todos los derechos reservados</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

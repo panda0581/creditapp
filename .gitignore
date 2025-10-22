@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+config.json
+user-data/
+*.dmg
+*.zip
+
+# Build outputs but not build configs
+out/
+release/
