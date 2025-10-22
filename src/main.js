@@ -8,6 +8,7 @@ const OpenRouterService = require('./services/openrouter');
 const PDFService = require('./services/pdfService');
 const OCRService = require('./services/ocrService');
 const CreditAnalyzer = require('./services/creditAnalyzer');
+const CardRecommendationEngine = require('./services/cardRecommendation');
 
 // Utilidades
 const security = require('./utils/security');
@@ -334,5 +335,58 @@ function formatAnalysisAsText(analysis) {
 
   return text;
 }
+
+// Guardar información financiera del usuario
+ipcMain.handle('save-financial-info', async (event, financialInfo) => {
+  try {
+    store.set('financialInfo', financialInfo);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Obtener información financiera del usuario
+ipcMain.handle('get-financial-info', async () => {
+  try {
+    const info = store.get('financialInfo', {});
+    return { success: true, info };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Obtener recomendaciones de tarjetas
+ipcMain.handle('get-card-recommendations', async (event, { profile, analysisData }) => {
+  try {
+    const cardEngine = new CardRecommendationEngine();
+
+    // Construir perfil completo
+    const fullProfile = {
+      creditScore: analysisData.creditScore || profile.creditScore || 650,
+      monthlyIncome: profile.monthlyIncome || 3000,
+      monthlyExpenses: profile.monthlyExpenses || 2000,
+      currentDebt: profile.currentDebt || 5000,
+      utilization: analysisData.utilization || profile.utilization || 30,
+      paymentHistory: analysisData.paymentHistory || profile.paymentHistory || 95
+    };
+
+    // Obtener análisis financiero
+    const financialAnalysis = cardEngine.analyzeFinancialProfile(fullProfile);
+
+    // Obtener recomendaciones de tarjetas
+    const recommendations = cardEngine.recommendCards(fullProfile, 8);
+
+    return {
+      success: true,
+      financialAnalysis,
+      recommendations,
+      profile: fullProfile
+    };
+  } catch (error) {
+    console.error('Error generando recomendaciones:', error);
+    return { success: false, error: error.message };
+  }
+});
 
 console.log('Credit Report Analyzer iniciado correctamente');
