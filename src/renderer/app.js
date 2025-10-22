@@ -295,6 +295,11 @@ async function analyzeReport() {
     Analizando...
   `;
 
+  console.log('=== INICIANDO ANÁLISIS ===');
+  console.log('Modelo:', model);
+  console.log('Tipo:', analysisType);
+  console.log('Longitud del texto:', appState.extractedText.length);
+
   try {
     const result = await ipcRenderer.invoke('analyze-credit-report', {
       text: appState.extractedText,
@@ -303,8 +308,21 @@ async function analyzeReport() {
       analysisType
     });
 
+    console.log('=== RESULTADO DEL ANÁLISIS ===');
+    console.log('Success:', result.success);
+    console.log('Analysis:', result.analysis);
+
     if (result.success) {
       appState.currentAnalysis = result.analysis;
+
+      // Verificar si hay validaciones
+      if (result.validation) {
+        console.log('Validación:', result.validation);
+        if (result.validation.warnings && result.validation.warnings.length > 0) {
+          console.warn('Advertencias:', result.validation.warnings);
+        }
+      }
+
       displayAnalysis(result.analysis);
       switchView('analysis');
       showNotification('Análisis completado exitosamente', 'success');
@@ -312,7 +330,8 @@ async function analyzeReport() {
       throw new Error(result.error);
     }
   } catch (error) {
-    console.error('Error en análisis:', error);
+    console.error('=== ERROR EN ANÁLISIS ===');
+    console.error('Error completo:', error);
     showNotification('Error al analizar: ' + error.message, 'error');
   } finally {
     analyzeBtn.disabled = false;
@@ -328,6 +347,17 @@ async function analyzeReport() {
 function displayAnalysis(analysis) {
   const container = document.getElementById('analysisResults');
   container.innerHTML = '';
+
+  console.log('Mostrando análisis:', analysis);
+
+  // Mostrar nota si existe
+  if (analysis.note) {
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'analysis-note';
+    noteDiv.style.cssText = 'background: rgba(33, 150, 243, 0.1); border-left: 3px solid #2196F3; padding: 12px 16px; margin-bottom: 20px; border-radius: 8px;';
+    noteDiv.innerHTML = `<strong>ℹ️ Nota:</strong> ${analysis.note}`;
+    container.appendChild(noteDiv);
+  }
 
   // Score principal
   if (analysis.creditScore || analysis.credit_score) {
@@ -368,11 +398,21 @@ function displayAnalysis(analysis) {
     container.appendChild(detailsSection);
   }
 
-  // Si es respuesta raw
+  // Si es respuesta raw (texto completo del análisis)
   if (analysis.rawResponse) {
     const rawSection = createSection('Análisis Completo', analysis.rawResponse);
     container.appendChild(rawSection);
   }
+
+  // Si no se mostró nada, mostrar el objeto completo
+  if (container.children.length === 0 || (container.children.length === 1 && analysis.note)) {
+    console.warn('No se pudo formatear el análisis, mostrando contenido raw');
+    const fallbackSection = createSection('Resultado del Análisis',
+      JSON.stringify(analysis, null, 2));
+    container.appendChild(fallbackSection);
+  }
+
+  console.log('✓ Análisis mostrado correctamente');
 }
 
 function createScoreCard(score) {

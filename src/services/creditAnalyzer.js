@@ -156,20 +156,30 @@ Formato: JSON estructurado.`;
     try {
       // Limpiar el response si viene con markdown
       let cleanResponse = response.trim();
-      if (cleanResponse.startsWith('```json')) {
-        cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      } else if (cleanResponse.startsWith('```')) {
-        cleanResponse = cleanResponse.replace(/```\n?/g, '');
+
+      // Remover bloques de código markdown
+      if (cleanResponse.includes('```')) {
+        // Extraer contenido entre ```json y ``` o entre ``` y ```
+        const jsonMatch = cleanResponse.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+        if (jsonMatch) {
+          cleanResponse = jsonMatch[1].trim();
+        } else {
+          // Si no encuentra el patrón, remover todos los ```
+          cleanResponse = cleanResponse.replace(/```(?:json)?/g, '').replace(/```/g, '');
+        }
       }
 
+      // Intentar parsear JSON
       const parsed = JSON.parse(cleanResponse);
 
       // Validar que tenga los campos mínimos esperados
       this.validateAnalysis(parsed, analysisType);
 
+      console.log('✓ Análisis parseado correctamente como JSON');
       return parsed;
     } catch (error) {
-      console.error('Error parseando respuesta:', error);
+      console.error('Error parseando JSON:', error.message);
+      console.log('Usando parser de respaldo para análisis en texto...');
 
       // Si el JSON falla, intentar extraer información estructurada del texto
       return this.fallbackParse(response, analysisType);
@@ -194,15 +204,63 @@ Formato: JSON estructurado.`;
   }
 
   fallbackParse(response, analysisType) {
+    console.log('Usando fallback parser - extrayendo datos del texto...');
+
     // Intento de parseo de respaldo si el JSON falla
-    return {
+    const analysis = {
       rawResponse: response,
       analysisType,
       timestamp: new Date().toISOString(),
-      note: 'Análisis en formato de texto (JSON parsing falló)',
+      note: 'Análisis procesado desde texto',
       summary: this.extractSummary(response),
       details: response
     };
+
+    // Intentar extraer puntaje de crédito del texto
+    const scoreMatch = response.match(/(?:credit score|puntaje|score|fico)[\s:]*(\d{3})/i);
+    if (scoreMatch) {
+      analysis.creditScore = parseInt(scoreMatch[1]);
+      console.log('✓ Puntaje extraído:', analysis.creditScore);
+    }
+
+    // Intentar extraer probabilidades
+    const probabilities = {};
+    const probPatterns = [
+      /(?:premium|tarjeta premium)[\s\S]{0,100}?(\d+)%/i,
+      /(?:standard|estándar|tarjeta estándar)[\s\S]{0,100}?(\d+)%/i,
+      /(?:mortgage|hipoteca)[\s\S]{0,100}?(\d+)%/i,
+      /(?:auto|automotriz)[\s\S]{0,100}?(\d+)%/i
+    ];
+
+    const probTypes = ['premium_card', 'standard_card', 'mortgage', 'auto_loan'];
+    probPatterns.forEach((pattern, index) => {
+      const match = response.match(pattern);
+      if (match) {
+        probabilities[probTypes[index]] = parseInt(match[1]);
+      }
+    });
+
+    if (Object.keys(probabilities).length > 0) {
+      analysis.approvalProbabilities = probabilities;
+      console.log('✓ Probabilidades extraídas:', probabilities);
+    }
+
+    // Intentar extraer recomendaciones
+    const recommendations = [];
+    const recSection = response.match(/(?:recomendaciones|recommendations)[\s\S]*?(?:\n\n|$)/i);
+    if (recSection) {
+      const lines = recSection[0].split('\n').filter(line =>
+        line.trim().match(/^[-*\d.]/));
+      recommendations.push(...lines.map(l => l.trim()));
+    }
+
+    if (recommendations.length > 0) {
+      analysis.recommendations = recommendations;
+      console.log('✓ Recomendaciones extraídas:', recommendations.length);
+    }
+
+    console.log('✓ Fallback parse completado');
+    return analysis;
   }
 
   extractSummary(text) {
